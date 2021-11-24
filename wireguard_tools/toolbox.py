@@ -17,13 +17,13 @@ class Toolbox():
         self.output_hook = output_hook
         self.image = f'{self.IMAGE}:latest'
         docker_build = ['docker', 'build', '-q', '-t', self.IMAGE, '-' ]
-        with io.StringIO(self.DOCKERFILE) as dockerfile:
-            self.log(self.exec(docker_build, input=dockerfile))
+        self.log(self.exec(docker_build, input_stream=self.DOCKERFILE))
 
     def exec(self, cmd, input_stream=None):
-        self.log(f"{self}: {repr(cmd)}")
-        ret = subprocess.run(cmd, input=input_stream, capture_output=True, check=True)
-        return ret.decode().strip()
+        self.log(f"{self}: {cmd}")
+        ret = subprocess.run(cmd, input=input_stream, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True, text=True)
+        self.log(f"{self}: {ret.stdout.strip()}")
+        return ret.stdout.strip()
 
     def log(self, msg):
         self.output_hook(msg)
@@ -37,7 +37,7 @@ class Toolbox():
         return self.docker_run(['wg', 'genkey'])
 
     def make_public_key(self, private_key):
-        return self.docker_run(['sh', '-c', f"'echo {private_key} | wg pubkey'"])
+        return self.docker_run(['sh', '-c', f"echo '{private_key}' | wg pubkey"])
 
     def make_preshared_key(self):
         return self.docker_run(['wg', 'genkey'])
